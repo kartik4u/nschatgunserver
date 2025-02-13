@@ -37,23 +37,40 @@ io.on("connection", (socket) => {
     users[socket.id] = { username, room };
 
     usernames.push(username);
-    mesges[room]?mesges[room]:mesges[room]=[];
-    console.log("mesges[room]",mesges[room]);
+    mesges[room]= mesges[room]?mesges[room]:[];
+    console.log("mesges[room]----",mesges[room]);
 
-    boxes[room] = boxes[room]?boxes[room]:[];
-    boxes[room].push(initialData);
+    // boxes[room] = boxes[room]?boxes[room]:[];
+    // boxes[room].push(initialData);
+
+
+    if(room in boxes){
+      let ii = boxes[room].findIndex((v)=>v.username==initialData.username)
+      console.log("ii",ii); 
+      if(ii<0){
+        boxes[room].push(initialData)
+       }
+     } else{
+      boxes[room]=[];
+      boxes[room].push(initialData)
+     }
+
+
+
    // io.to(room).emit("receive-message", mesges[room]);
     //boxes[room][username]=initialData;
     //.push(initialData);
     // let enData = {allData:boxes[room]}
     //boxes.push(initialData);
-    console.log("boxes",boxes);
+    console.log("boxes-------",boxes);
     io.to(room).emit("user-joined", `${username} joined the chat`,usernames,boxes[room],mesges[room]);
+    io.emit("onlineUsers", boxes);
   });
 
   socket.on("send-message", (messageData) => {
     const { room, message, sender } = messageData;
     mesges[room]?mesges[room].push(messageData):mesges[room]=[];
+    
     console.log("mesges[room]1",mesges[room]);
     io.to(room).emit("receive-message", mesges[room]);
   });
@@ -71,11 +88,14 @@ io.on("connection", (socket) => {
 
       io.to(user.room).emit("user-left", `${user.username} left the chat`,user,usernames,boxes[user.room]);
       delete users[socket.id];
+      io.emit("onlineUsers", boxes);
       }
 
   });
 
-  
+  socket.on("updateNewMsg", (messageData) => {
+    io.emit("newMsg", messageData);
+  });
 
   socket.on("disconnect", () => {
     const user = users[socket.id];
@@ -92,6 +112,7 @@ io.on("connection", (socket) => {
       io.to(user.room).emit("user-left", `${user.username} left the chat`,user,usernames,boxes[user.room]);
       delete users[socket.id];
 
+      io.emit("onlineUsers", boxes);
 
 
       //delete users[socket.id];
